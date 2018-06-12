@@ -10,21 +10,38 @@ function Game(canvasElement) {
     this.intervalId = undefined;
     this.fps = 60;
     this.tickRateCounter = 0;
+    
+    this.score = 0;
+    this.level = 1;
+    this.difficulty = 1;
+    this.equaliser = -2
 
+    this.difficultyModifier = (this.level + this.difficulty) - this.equaliser
+    
     this.setKeyboardListeners();
-    console.log(this.army)
+    // console.log(this.army.enemies.indexOf(this.army.enemies[2]))
+}
+
+Game.prototype.increaseDifficulty = function () {
+    this.army.difficultyModifier = this.difficultyModifier
 }
 
 Game.prototype.start = function () {
     if (!this.intervalId) {
         this.intervalId = setInterval(function () {
+      
+            
             this.clear();
             this.drawAll();
             this.moveAll();
             this.checkCollitions();
-            this.changeRoom();
+            this.resolveCombat();
+            console.log(this.difficultyModifier, this.army.difficultyModifier)
+            //this.checkCanDie(); TODO : canDie is true
+            
+            this.checkChangeRoom();
+            
             this.checkGameOver();
-           this.resolveCombat();
         }.bind(this), 1000 / this.fps);
     }
 }
@@ -40,24 +57,85 @@ Game.prototype.clear = function () {
     this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
 }
 
+Game.prototype.resolveCombat = function () {
+    var collitions = this.player.checkCollitions(this.army.enemies);
+    
+    collitions.forEach(function(enemy, index) {
+        this.tickRateCounter++;
+      //  console.log(this.player.canDie)
+        
+        if (this.player.isHitting) {        
+            enemy.health -= 1;
+            this.score ++;
+            this.army.enemies = this.army.enemies.filter(function(e){
+                return e.health >= 0;
+                console.log(this.army.enemies.length)
+                debugger;
+            })
+            
+        } else if(this.tickRateCounter % 6000 === 0){
+            this.player.health -= 1;
+            this.tickRateCounter = 0;
+            
+        }
+    }.bind(this));
+}
+Game.prototype.checkCanDie = function () {//TODO: canDie is automatically set to true
+    if (this.player.canDie = true){
+        this.resolveCombat();
+    };
+}
+
 Game.prototype.moveAll = function (action) {
     this.player.move();
     this.army.move(this.enemy);
 }
 
-Game.prototype.changeRoom = function () {
+Game.prototype.checkChangeRoom = function () {
+    //console.log(this.army.enemies.length)
+    if(this.army.enemies.length === 0){
+        if (this.player.x + this.player.w >= this.door.x &&
+    
+            this.player.y + this.player.h >= this.door.y &&
+            this.player.y <= this.door.y + this.door.h &&
+            this.player.x <= this.door.x + this.door.w
+        ) {//TODO: Infinite loop, no changeRoom()
+            // if (confirm("Congratulations! Did that seem too easy? How about a greater challenge for the next room?")) {
+            //     this.difficulty +=5;
+            //     this.level ++;
+            //     this.changeRoom(2);
+            // }else {
+            //     this.difficulty ++;
+            //     this.level ++;
+            //     this.changeRoom (2);
+            // }
+         var nextLevel = this.level++;
+         this.changeRoom(nextLevel);
+        }
+    }
+}
 
-    // if (this.EnemyArmy.enemies.length = 0){
+Game.prototype.changeRoom = function (nextRoom) {//TODO: no changeRoom()
+    //new bg draw (change source)
+    console.log('level: ' + this.level)
+    this.increaseDifficulty();
+    this.player.x = this.ctx.canvas.width/2
+    this.player.y = this.ctx.canvas.height/2
+    
 
-    // }
+    switch(nextRoom) {
+        case 2: 
+        this.army.addToArmy(4);
+        break;
 
-    if (this.player.x + this.player.w >= this.door.x &&
-        this.player.y + this.player.h >= this.door.y &&
-        this.player.y <= this.door.y + this.door.h &&
-        this.player.x <= this.door.x + this.door.w
-    ) {
-        this.player.x = this.ctx.canvas.width / 2
-        this.player.y = this.ctx.canvas.height / 2
+        case 3:
+        this.army.addToArmy(10);
+        break;
+
+        case 4:
+        this.army.addToArmy(this.army.difficultyModifier);
+        break;
+
     }
 
 }
@@ -67,31 +145,21 @@ Game.prototype.checkCollitions = function() {
     this.army.clean();
 }
 
-Game.prototype.resolveCombat = function () {
-    var collitions = this.player.checkCollitions(this.army.enemies);
-    collitions.forEach(function(item, index,) {
-       console.log('ITEM --> ', item, index)
-       this.tickRateCounter++;
-        if (this.player.isHitting) {
-            console.log("HIT!!!")
-            item.health -= 1;
-        } else if(this.tickRateCounter % 150 === 0){
-            console.log(this.player.health)
-            this.player.health -= 1;
-            this.tickRateCounter = 0;
-        }
-    }.bind(this));
-    this.army.clean();
-}
+
 
 Game.prototype.checkGameOver = function () {
-    if (!this.player.health){
-        
+    if (this.player.health <= 0){
+        this.gameOver();
     }
-
 }
 
+Game.prototype.gameOver = function (){
+    clearInterval(this.intervalId);
 
+    if (confirm("GAME OVER! Play again?")) {
+      location.reload();
+    }
+}
 
 Game.prototype.setKeyboardListeners = function () {
     document.onkeydown = function (event) {

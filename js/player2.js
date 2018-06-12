@@ -2,8 +2,8 @@
 function Player(ctx) {
     this.ctx = ctx;
   
-    this.w = 40
-    this.h = 40
+    this.w = 100
+    this.h = 100
     this.x0 = 0
     this.x = 250
     this.y0 = (this.ctx.canvas.height * 0.93) - this.h;
@@ -12,14 +12,15 @@ function Player(ctx) {
     this.vx = 0;
     this.vy = 0;
 
-    this.frames = 6;
+    this.frames = 8;
     this.frameIndex = 0;
     this.framesCounter = 0;
     this.animateEvery = 6;
     
     //this.direction //= 'N' || 'S' || 'E' || 'W' //('north' ||'south'||'east'||'west')
-    
+    this.canDie = false
     this.isHitting= false 
+   // console.log(this.canDie);
     
 
     this.img = new Image();
@@ -48,6 +49,7 @@ function Player(ctx) {
     this.damage = 0
   
     this.health = 30;
+    console.log (this.health)
   }
   
  // draw player:
@@ -61,6 +63,11 @@ function Player(ctx) {
    )
 
    this.framesCounter++;
+   this.hittingCounter ++
+   if (this.hittingCounter % 5 === 0) {
+    this.isHitting = false;
+    this.hittingCounter = 0;
+   }
    //console.log(this.framesCounter, this.frameIndex)
  }
 
@@ -70,7 +77,7 @@ function Player(ctx) {
         this.img,
         this.frameIndex * Math.floor(this.img.width / this.frames),
         0,
-        this.img.width / 6,
+        this.img.width / this.frames,
         this.img.height,
         this.x,
         this.y,
@@ -83,8 +90,8 @@ function Player(ctx) {
       this.img,
       this.frameIndex * Math.floor(this.img.width / this.frames),
       0,
-      this.img.width / 6,
       this.img.height,
+      this.img.width/this.frames,
       this.x,
       this.y,
       this.w,
@@ -96,7 +103,7 @@ function Player(ctx) {
       this.img,
       this.frameIndex * Math.floor(this.img.width / this.frames),
       0,
-      this.img.width / 6,
+      this.img.width / this.frames,
       this.img.height,
       this.x,
       this.y,
@@ -106,9 +113,9 @@ function Player(ctx) {
    } else if (this.direction = 'W'){
     this.ctx.drawImage(
       this.img,
-      this.frameIndex * Math.floor(this.img.width / this.frames),
+      this.frameIndex * Math.floor(this.img.height / this.frames),
       0,
-      this.img.width / 6,
+      this.img.width / this.frames,
       this.img.height,
       this.x,
       this.y,
@@ -149,32 +156,80 @@ Player.prototype.LEFT = 37;
 Player.prototype.RIGHT = 39;
 Player.prototype.HIT = 32;
 
+Player.prototype.hit = function () {
+  console.log('Player hit state was: ' + this.isHitting)
+  this.isHitting = true;
+  this.hittingCounter = 0
+  console.log('Player state is now: ' + this.isHitting)
+ // clearInterval(myAttack);
+}
+
 Player.prototype.onKeyDown = function(code) {
   switch(code) {
+    case this.HIT:
+     
+     this.hit();
+     
+     //this.canDie = true ;console.log(this.canDie)
+     break;
+
     case this.TOP:
-      this.img.src = 'img/player/walkNorth.png'
-      this.vy = -3;
+    
+    if(!this.isHitting){
+        this.frames = 8;
+        this.img.src = 'img/player/walkNorth.png'
+        this.vy = -3;     
+      }else {
+        this.frames = 8;
+        this.img.src = 'img/player/hitNorth.png'
+        this.vy = 0;   
+      }
       break;
       
     case this.DOWN:
-    this.img.src = 'img/player/WalkSouth.png'
-     this.vy = 3
+    
+      if(!this.isHitting){
+        this.frames = 8;
+        this.img.src = 'img/player/walkSouth.png'
+         this.vy = 3
+
+      }else {
+        this.frames = 8;
+        this.img.src = 'img/player/hitSouth.png'
+         this.vy = 0
+      }
      break;
 
     case this.RIGHT:
-    this.img.src = 'img/player/WalkEast.png'
+    console.log(this.canDie)
+    if(!this.isHitting){
+      this.frames = 8
+      this.img.src = 'img/player/walkEast.png'
       this.vx = 3;
+
+    }else {
+      this.frames = 8;
+      this.img.src = 'img/player/hitEast.png'
+      this.vx = 0;
+    }
       break;
 
     case this.LEFT:
-    this.img.src = 'img/player/WalkWest.png'
+    
+    if(!this.isHitting){
+      this.frames = 8
+      this.img.src = 'img/player/walkWest.png'
       this.vx = -3;
+
+    }else {
+      this.frames = 8;
+      this.img.src = 'img/player/hitWest.png';
+      this.vx = 0
+
+    }
       break;
 
 
-     case this.HIT:
-      this.isHitting = true;
-      break;
   }
 };
 
@@ -187,8 +242,8 @@ Player.prototype.onKeyUp = function(code) {
     case this.TOP:
     case this.DOWN:
       this.vy = 0;
-    case this.HIT:
-      this.isHitting = false;
+    //case this.HIT:
+     // this.isHitting = false;
   }
 
 }
@@ -213,8 +268,9 @@ Player.prototype.checkCollitions = function(army) {
 Player.prototype.checkEnemyCollition = function(enemy) {
   if(this.isHitting){
     enemy.health -= 1
-  }else {
-    this.health -= 5
+  }else if(this.tickRateCounter % 50 === 0){
+            this.player.health -= 1;
+            this.tickRateCounter = 0;
   }
   
 }
